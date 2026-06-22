@@ -323,3 +323,28 @@ class PretrainDataset(Dataset):
             vol = vol[np.newaxis, ...]
 
         return vol
+
+class SimpleISLESDataset(Dataset):
+    def __init__(self, data_dir):
+        self.data_dir = data_dir
+        # Grab all the image .npy files, ignoring the _seg.npy masks
+        self.files = [f for f in os.listdir(data_dir) if f.endswith(".npy") and not f.endswith("_seg.npy")]
+        
+    def __len__(self):
+        return len(self.files)
+        
+    def __getitem__(self, idx):
+        filename = self.files[idx]
+        filepath = os.path.join(self.data_dir, filename)
+        
+        # Load the preprocessed array [Channels, X, Y, Z]
+        data = np.load(filepath)
+        tensor_data = torch.from_numpy(data).float()
+        
+        # Clean the filename to just get the subject ID (e.g. "sub_stroke0001")
+        subject_id = filename.replace("ISLES24_", "").replace(".npy", "")
+        
+        return {
+            'image': tensor_data,
+            'subject_id': subject_id
+        }
